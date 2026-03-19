@@ -28,6 +28,14 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"       # Tối đa 1 CPU core
+          memory: 512M      # Tối đa 512 MB RAM
+        reservations:
+          cpus: "0.25"      # Đảm bảo tối thiểu 0.25 CPU core
+          memory: 256M      # Đảm bảo tối thiểu 256 MB RAM
 
   # ──────────────────────────────────────────────────────────────────
   #  Telegram Bot
@@ -52,7 +60,15 @@ services:
       - bot_network
     volumes:
       - ./logs:/app/logs             # Mount thư mục log ra ngoài
-
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"       # Tối đa 0.5 CPU core
+          memory: 128M      # Tối đa 128 MB RAM
+        reservations:
+          cpus: "0.1"       # Đảm bảo tối thiểu 0.1 CPU core
+          memory: 64M       # Đảm bảo tối thiểu 64 MB RAM
+ 
 # ──────────────────────────────────────────────────────────────────
 #  Volumes & Networks
 # ──────────────────────────────────────────────────────────────────

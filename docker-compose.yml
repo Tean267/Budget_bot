@@ -1,0 +1,65 @@
+services:
+
+  # ──────────────────────────────────────────────────────────────────
+  #  MySQL Database
+  # ──────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: budget_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE:      ${MYSQL_DATABASE}
+      MYSQL_USER:          ${MYSQL_USER}
+      MYSQL_PASSWORD:      ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql          # Lưu data lâu dài
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro  # Chạy khi tạo DB lần đầu
+    # ports không cần thiết vì bot kết nối nội bộ qua Docker network
+    # Bỏ comment dòng dưới nếu muốn dùng MySQL Workbench từ máy host
+    # ports:
+    #   - "3307:3306"
+    networks:
+      - bot_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost",
+             "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ──────────────────────────────────────────────────────────────────
+  #  Telegram Bot
+  # ──────────────────────────────────────────────────────────────────
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: budget_bot
+    restart: always
+    environment:
+      BOT_TOKEN:      ${BOT_TOKEN}
+      MYSQL_HOST:     mysql          # Tên service thay cho localhost
+      MYSQL_USER:     ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      TZ:             Asia/Ho_Chi_Minh
+    depends_on:
+      mysql:
+        condition: service_healthy   # Chờ MySQL sẵn sàng mới khởi động bot
+    networks:
+      - bot_network
+    volumes:
+      - ./logs:/app/logs             # Mount thư mục log ra ngoài
+
+# ──────────────────────────────────────────────────────────────────
+#  Volumes & Networks
+# ──────────────────────────────────────────────────────────────────
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  bot_network:
+    driver: bridge
